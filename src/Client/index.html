@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <script type="text/javascript" src="js/d3.v2.js"></script>
+    <script type="text/javascript" src="js/rickshaw/rickshaw.min.js"></script>
+    <link rel="stylesheet" href="js/rickshaw/rickshaw.min.css" type="text/css"></link>
+    <style type="text/css">
+        .console {
+            color:white;
+            background-color: black;
+            font-family: "Lucida Console";
+            font-size: 12px;
+            height: 600px;
+            overflow: auto;
+        }
+        .major-metric {
+            font-size: 32px;
+            font-family: "Arial";            
+        }
+    </style>
+</head>
+<body>
+    <div id="console" class="console"></div>
+    <div id="dashboard">
+        <span id="state" class="major-metric"></span>
+    </div>
+    <div id="chart_container">
+        <div id="chart"></div>
+    </div>
+    <script type="text/javascript">
+        var consolePlaceholder = document.getElementById("console");
+        var statePlaceholder = document.getElementById("state");
+        var socket = new WebSocket('ws://localhost:8181');
+        var seriesData = [{x:0,y:10}];
+        var cnt = 0;
+        socket.onopen = function() {
+            console.log('handshake successfully established. May send data now...');
+            setInterval(function() {
+                socket.send("ping");
+            }, 30 * 1000);
+        };
+        socket.onmessage = function(event) {
+            consolePlaceholder.innerHTML += event.data + '<br>';
+            consolePlaceholder.scrollTop = consolePlaceholder.scrollHeight;
+
+            statePlaceholder.innerHTML = event.data;
+
+            updateDataSeries(event.data);
+            updateChart();
+        };
+        socket.onclose = function() {
+            console.log('connection closed');
+        };
+        socket.onerror = function(err) {
+            console.log('unexpected error happened: ' + err);
+        };
+
+        function updateDataSeries(data) {
+            seriesData.push({x:cnt,y:parseInt(data)});
+            if(seriesData.length > 100) {
+                seriesData.splice(0, 1);
+            }
+            cnt++;
+        }
+
+        function initChart() {
+            var palette = new Rickshaw.Color.Palette( { scheme: 'classic9' } );
+
+            // instantiate our graph!
+
+            var graph = new Rickshaw.Graph( {
+                element: document.getElementById("chart"),
+                width: 900,
+                height: 150,
+                renderer: 'area',
+                stroke: true,
+                preserve: true,
+                series: [
+                    {
+                        color: 'lightblue',
+                        data: seriesData,
+                        name: 'Data'
+                    }
+                ]
+            } );
+
+            graph.render();
+
+            var hoverDetail = new Rickshaw.Graph.HoverDetail( {
+                graph: graph,
+                xFormatter: function(x) {
+                    return new Date(x * 1000).toString();
+                }
+            } );
+
+            var ticksTreatment = 'glow';
+            var xAxis = new Rickshaw.Graph.Axis.Time( {
+                graph: graph,
+                min: "auto",
+                max: "auto"
+            } );
+
+            xAxis.render();
+
+            var yAxis = new Rickshaw.Graph.Axis.Y( {
+                graph: graph,
+                tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+                ticksTreatment: ticksTreatment
+            } );
+
+            yAxis.render();
+
+            return function() {
+                graph.update();
+            };
+        }
+        var updateChart = initChart();
+    </script>
+</body>
+</html>
