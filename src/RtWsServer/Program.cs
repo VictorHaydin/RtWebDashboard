@@ -19,17 +19,17 @@ namespace RtWsServer
             var state = 10;
             using (var service = new WebSocketService())
             {
-                for (int i = 0; i < 100; i++)
+                while(true)
                 {
                     PublishState(state, service);
                     PrintState(state);
                     state = ModifyState(state);
-                    Thread.Sleep(500 + _rand.Next(500));
+                    Thread.Sleep(50 + _rand.Next(50));
                 }
             }
-            Console.WriteLine("Average roundtrip time: {0} ms. Max: {1} ms. Min: {2} ms.",
-                StatisticsService.GetAverageRoundtripTime(), StatisticsService.GetMaxRoundtripTime(),
-                StatisticsService.GetMinRoundtripTime());
+            //var stats = StatisticsService.GetStats();
+            //Console.WriteLine("Average roundtrip time: {0} ms. Max: {1} ms. Min: {2} ms.", stats.AverageRoundtrip, stats.MaxRoundtrip, stats.MinRoundtrip);
+            //Console.ReadKey();
         }
 
         private static int ModifyState(int state)
@@ -45,7 +45,7 @@ namespace RtWsServer
 
         private static void PublishState(int state, WebSocketService service)
         {
-            service.Publish(new Message { Data = state, SentTimestamp = TimeService.Now });
+            service.Publish(new Message { Data = state, SentTimestamp = TimeService.Now, Stats = StatisticsService.GetStats() });
         }
     }
 }

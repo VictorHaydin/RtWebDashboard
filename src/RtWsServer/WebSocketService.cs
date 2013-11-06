@@ -30,7 +30,7 @@ namespace RtWsServer
             _wsServer.OnReceive += e =>
             {
                 var message = JsonConvert.DeserializeObject<Message>(e.DataFrame.ToString());
-                StatisticsService.StoreRoundtripTime(TimeService.Now - message.SentTimestamp);
+                StatisticsService.StoreRoundtripTime((int)(TimeService.Now - message.SentTimestamp));
             };
             _wsServer.Start();
             _workerThread.Start();
@@ -59,6 +59,7 @@ namespace RtWsServer
                         userContext.Send(JsonConvert.SerializeObject(message));
                     }
                 }
+                Thread.Sleep(1);
             }
         }
     }

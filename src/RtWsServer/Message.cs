@@ -11,5 +11,6 @@ namespace RtWsServer
         public int Data { get; set; }
         public long SentTimestamp { get; set; }
         public long ReturnedTimestamp { get; set; }
+        public StatisticsService.Stats Stats { get; set; }
     }
 }
