@@ -36,18 +36,18 @@
         var cnt = 0;
         socket.onopen = function() {
             console.log('handshake successfully established. May send data now...');
-            setInterval(function() {
-                socket.send("ping");
-            }, 30 * 1000);
         };
         socket.onmessage = function(event) {
-            consolePlaceholder.innerHTML += event.data + '<br>';
+            var data = JSON.parse(event.data).Data;
+            consolePlaceholder.innerHTML += data + '<br>';
             consolePlaceholder.scrollTop = consolePlaceholder.scrollHeight;
 
-            statePlaceholder.innerHTML = event.data;
+            statePlaceholder.innerHTML = data;
 
-            updateDataSeries(event.data);
+            updateDataSeries(data);
             updateChart();
+
+            socket.send(event.data); // return the message back
         };
         socket.onclose = function() {
             console.log('connection closed');

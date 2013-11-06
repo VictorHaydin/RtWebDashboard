@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Alchemy;
 using Alchemy.Classes;
+using Newtonsoft.Json;
 
 namespace RtWsServer
 {
@@ -14,7 +15,7 @@ namespace RtWsServer
     {
         private WebSocketServer _wsServer = new WebSocketServer(8181);
         private List<UserContext> _users = new List<UserContext>();
-        private ConcurrentQueue<int> _messages = new ConcurrentQueue<int>();
+        private ConcurrentQueue<Message> _messages = new ConcurrentQueue<Message>();
         private Thread _workerThread;
 
         public WebSocketService()
@@ -26,7 +27,11 @@ namespace RtWsServer
                 _users.Add(context); // is this thread safe?
             };
             _wsServer.OnDisconnect += context => Console.WriteLine("Disconnected: {0}", context.ClientAddress);
-            _wsServer.OnReceive += e => Console.WriteLine("Received data from client: {0}", e.DataFrame);
+            _wsServer.OnReceive += e =>
+            {
+                var message = JsonConvert.DeserializeObject<Message>(e.DataFrame.ToString());
+                StatisticsService.StoreRoundtripTime(TimeService.Now - message.SentTimestamp);
+            };
             _wsServer.Start();
             _workerThread.Start();
         }
@@ -37,21 +42,21 @@ namespace RtWsServer
             _wsServer.Dispose();
         }
 
-        public void Publish(int state)
+        public void Publish(Message state)
         {
             _messages.Enqueue(state);
         }
 
         private void ProcessMessages()
         {
-            int message;
             while (true)
             {
+                Message message;
                 if (_messages.TryDequeue(out message))
                 {
                     foreach (var userContext in _users)
                     {
-                        userContext.Send(message.ToString());
+                        userContext.Send(JsonConvert.SerializeObject(message));
                     }
                 }
             }

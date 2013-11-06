@@ -14,13 +14,12 @@ namespace RtWsServer
     {
         private static Random _rand = new Random();
         
-        
         static void Main(string[] args)
         {
             var state = 10;
             using (var service = new WebSocketService())
             {
-                while (true)
+                for (int i = 0; i < 100; i++)
                 {
                     PublishState(state, service);
                     PrintState(state);
@@ -28,6 +27,9 @@ namespace RtWsServer
                     Thread.Sleep(500 + _rand.Next(500));
                 }
             }
+            Console.WriteLine("Average roundtrip time: {0} ms. Max: {1} ms. Min: {2} ms.",
+                StatisticsService.GetAverageRoundtripTime(), StatisticsService.GetMaxRoundtripTime(),
+                StatisticsService.GetMinRoundtripTime());
         }
 
         private static int ModifyState(int state)
@@ -43,7 +45,7 @@ namespace RtWsServer
 
         private static void PublishState(int state, WebSocketService service)
         {
-            service.Publish(state);
+            service.Publish(new Message { Data = state, SentTimestamp = TimeService.Now });
         }
     }
 }
